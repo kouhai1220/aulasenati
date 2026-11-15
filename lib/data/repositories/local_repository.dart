@@ -383,16 +383,60 @@ class LocalRepository {
     return resultado.map((e) => Participacion.fromMap(e)).toList();
   }
 
-  Future<double> obtenerPuntosAcumulados(int estudianteId) async {
+  
+  // ============================================================
+  // REPORTES - CALIFICACIONES CONSOLIDADAS
+  // ============================================================
+
+  Future<List<Map<String, dynamic>>> obtenerReporteCalificaciones({
+    required int grupoId,
+    int? sesionId,
+    int? estudianteId,
+  }) async {
     final db = await _database;
-    final resultado = await db.rawQuery(
-      '''
-      SELECT COALESCE(SUM(puntos), 0) AS total
-      FROM participacion
-      WHERE estudiante_id = ?
-      ''',
-      [estudianteId],
-    );
-    return (resultado.first['total'] as num).toDouble();
+
+    final resultado = await db.rawQuery('''
+      SELECT
+        e.estudiante_id,
+        e.codigo_institucional,
+        e.nombres,
+        e.apellidos,
+        COALESCE(SUM(p.puntos), 0) AS total_puntos
+
+      FROM estudiante e
+
+      INNER JOIN grupo_estudiante ge
+        ON ge.estudiante_id = e.estudiante_id
+
+      LEFT JOIN sesion s
+        ON s.grupo_id = ge.grupo_id
+
+      LEFT JOIN participacion p
+        ON p.estudiante_id = e.estudiante_id
+        AND p.sesion_id = s.sesion_id
+
+      WHERE ge.grupo_id = ?
+        AND ge.estado = 'activo'
+        AND e.estado = 'activo'
+        AND (? IS NULL OR s.sesion_id = ?)
+        AND (? IS NULL OR e.estudiante_id = ?)
+
+      GROUP BY
+        e.estudiante_id,
+        e.codigo_institucional,
+        e.nombres,
+        e.apellidos
+
+      ORDER BY e.apellidos ASC, e.nombres ASC
+    ''', [
+      grupoId,
+      sesionId,
+      sesionId,
+      estudianteId,
+      estudianteId,
+    ]);
+
+    return resultado;
   }
+
 }
