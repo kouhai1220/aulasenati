@@ -67,8 +67,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           GroupsScreen(),
           const SessionsScreen(),
-          const AttendanceScreen(),
-          const ParticipationScreen(),
+          AttendanceScreen(isActive: _currentIndex == 3),
+          ParticipationScreen(isActive: _currentIndex == 4),
           _buildPlaceholder(
             'Reportes y Exportación',
             Icons.bar_chart,

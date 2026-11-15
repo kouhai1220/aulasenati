@@ -6,6 +6,7 @@ import '../../data/repositories/local_repository.dart';
 import '../../models/grupo.dart';
 import '../../models/instructor.dart';
 import 'group_form_screen.dart';
+import 'group_students_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -187,6 +188,15 @@ class _GroupsScreenState extends State<GroupsScreen> {
             elevation: 2,
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GroupStudentsScreen(grupo: grupo),
+                  ),
+                );
+                await _cargarGrupos();
+              },
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 8,
@@ -208,6 +218,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
               leading: const CircleAvatar(
                 child: Icon(Icons.groups),
               ),
+              trailing: const Icon(Icons.chevron_right),
             ),
           );
         },

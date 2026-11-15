@@ -8,7 +8,12 @@ import '../../models/participacion.dart';
 import '../../models/sesion.dart';
 
 class ParticipationScreen extends StatefulWidget {
-  const ParticipationScreen({super.key});
+  final bool isActive;
+
+  const ParticipationScreen({
+    super.key,
+    this.isActive = false,
+  });
 
   @override
   State<ParticipationScreen> createState() => _ParticipationScreenState();
@@ -37,6 +42,16 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+  }
+
+  @override
+  void didUpdateWidget(covariant ParticipationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Al volver a esta pestaña, actualiza sesiones, actividades y registros.
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadInitialData();
+    }
   }
 
   @override

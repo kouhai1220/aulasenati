@@ -7,7 +7,12 @@ import '../../models/estudiante.dart';
 import '../../models/sesion.dart';
 
 class AttendanceScreen extends StatefulWidget {
-  const AttendanceScreen({super.key});
+  final bool isActive;
+
+  const AttendanceScreen({
+    super.key,
+    this.isActive = false,
+  });
 
   @override
   State<AttendanceScreen> createState() => _AttendanceScreenState();
@@ -29,6 +34,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+  }
+
+  @override
+  void didUpdateWidget(covariant AttendanceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Al volver a esta pestaña, vuelve a consultar las sesiones guardadas.
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadInitialData();
+    }
   }
 
   Future<void> _loadInitialData() async {
