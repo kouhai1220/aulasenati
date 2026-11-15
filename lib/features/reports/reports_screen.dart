@@ -227,6 +227,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // EXPORTACIÓN PDF
   // ============================================================
 
+  // Genera el reporte en PDF (A4) con encabezado, criterios aplicados y una
+  // tabla de estudiantes con su total de puntos. Al finalizar lo comparte
+  // usando el diálogo de impresión/compartir del sistema (Printing.sharePdf).
   Future<void> _exportarPdf() async {
     if (_reporteFiltrado.isEmpty) {
       _mostrarMensaje('No hay información para exportar.');
@@ -240,6 +243,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final periodo = _periodoGrupo();
       final fechaGeneracion = _fechaActual();
 
+      // Criterios que se imprimirán como cabecera del reporte.
       final criterioSesion = _sesionId == -1
           ? 'Todas las sesiones'
           : 'Sesión $_sesionId';
@@ -248,12 +252,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ? 'Todos'
           : _busqueda.trim();
 
+      // Se construye el documento PDF (MultiPage permite varias hojas).
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(32),
           build: (context) {
             return [
+              // Título e identificación del reporte.
               pw.Text(
                 'AULA PUNTOS - SENATI',
                 style: pw.TextStyle(
@@ -281,6 +287,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
               pw.SizedBox(height: 20),
 
+              // Tabla con un estudiante por fila y su total de puntos.
               pw.TableHelper.fromTextArray(
                 headers: [
                   'Estudiante',
@@ -341,6 +348,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
       );
 
+      // Se genera el contenido binario del PDF y se abre el diálogo para
+      // guardarlo o compartirlo.
       final Uint8List bytes = await pdf.save();
 
       await Printing.sharePdf(
@@ -356,6 +365,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // EXPORTACIÓN EXCEL
   // ============================================================
 
+  // Genera el mismo reporte pero en formato Excel (.xlsx): crea la hoja
+  // "Calificaciones", escribe la cabecera, la tabla de estudiantes y la fila
+  // de total, aplica estilos y comparte el archivo con otras apps.
   Future<void> _exportarExcel() async {
     if (_reporteFiltrado.isEmpty) {
       _mostrarMensaje('No hay información para exportar.');
@@ -363,6 +375,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     try {
+      // Se crea el libro de Excel y se renombra la hoja por defecto.
       final excel = Excel.createExcel();
 
       excel.rename('Sheet1', 'Calificaciones');
@@ -498,6 +511,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       final nombre = _nombreArchivo('xlsx');
 
+      // Se comparte el archivo generado con el nombre indicado.
       await SharePlus.instance.share(
         ShareParams(
           title: 'Reporte de calificaciones',
@@ -521,6 +535,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // INTERFAZ PRINCIPAL
   // ============================================================
 
+  // Estructura de la pantalla: barra superior con botón de actualizar y
+  // cuerpo construido por _buildBody().
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -538,6 +554,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  // Decide qué mostrar: spinner mientras carga, aviso si no hay grupos, o el
+  // listado completo de la pantalla (filtros, resumen, listado y exportación).
   Widget _buildBody() {
     if (_isLoading && _grupos.isEmpty) {
       return const Center(
@@ -598,6 +616,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // FILTROS
   // ============================================================
 
+  // Construye la tarjeta de filtros: selección de grupo, de sesión y buscador
+  // por nombre o código institucional.
   Widget _buildFiltros() {
     return Card(
       child: Padding(
@@ -705,6 +725,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // RESUMEN DEL REPORTE
   // ============================================================
 
+  // Tarjeta resumen con el grupo/periodo y los totales (n.º de estudiantes y
+  // suma de puntos) del reporte actual.
   Widget _buildResumen() {
     return Card(
       color: AppTheme.primaryColor,
@@ -763,6 +785,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  // Pequeño bloque reutilizable con un título y un valor (dato del resumen).
   Widget _datoResumen(String titulo, String valor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,6 +813,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // LISTADO DE CALIFICACIONES
   // ============================================================
 
+  // Lista las calificaciones: un elemento por estudiante con su nombre, código
+  // y total de puntos (o mensajes de carga / sin resultados).
   Widget _buildListado() {
     if (_isLoading) {
       return const Center(
@@ -881,6 +906,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // BOTONES DE EXPORTACIÓN
   // ============================================================
 
+  // Botones para exportar el reporte a PDF y a Excel. Se deshabilitan si no
+  // hay datos o si la pantalla sigue cargando.
   Widget _buildExportacion() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
