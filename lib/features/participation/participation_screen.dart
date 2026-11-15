@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+
 import '../../data/repositories/local_repository.dart';
 import '../../models/actividad.dart';
 import '../../models/estudiante.dart';
@@ -15,18 +17,21 @@ class ParticipationScreen extends StatefulWidget {
 class _ParticipationScreenState extends State<ParticipationScreen> {
   final LocalRepository _repository = LocalRepository();
 
+  final TextEditingController _pointsController = TextEditingController();
+  final TextEditingController _observationController = TextEditingController();
+
   List<Sesion> _sesiones = [];
-  Sesion? _selectedSesion;
-
   List<Actividad> _actividades = [];
-  Actividad? _selectedActividad;
-
   List<Estudiante> _estudiantes = [];
+  List<Participacion> _participaciones = [];
+
+  Sesion? _selectedSesion;
+  Actividad? _selectedActividad;
   Estudiante? _selectedEstudiante;
 
-  final TextEditingController _puntosController = TextEditingController();
   bool _isLoading = true;
-  List<Participacion> _participacionesSesion = [];
+  bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -34,91 +39,244 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     _loadInitialData();
   }
 
+  @override
+  void dispose() {
+    _pointsController.dispose();
+    _observationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      _sesiones = await _repository.obtenerSesiones();
-      _actividades = await _repository.obtenerActividades();
+      final resultados = await Future.wait([
+        _repository.obtenerSesiones(),
+        _repository.obtenerActividades(),
+      ]);
 
-      if (_sesiones.isNotEmpty) {
-        _selectedSesion = _sesiones.first;
-        await _onSesionChanged(_selectedSesion!);
-      }
+      if (!mounted) return;
 
-      if (_actividades.isNotEmpty) {
-        _selectedActividad = _actividades.first;
+      _sesiones = resultados[0] as List<Sesion>;
+      _actividades = resultados[1] as List<Actividad>;
+
+      _selectedSesion = _sesiones.isNotEmpty ? _sesiones.first : null;
+      _selectedActividad =
+          _actividades.isNotEmpty ? _actividades.first : null;
+
+      if (_selectedSesion != null) {
+        await _loadSessionData(_selectedSesion!);
+      } else {
+        _estudiantes = [];
+        _participaciones = [];
       }
     } catch (e) {
-      debugPrint('Error al cargar datos de participación: $e');
+      if (!mounted) return;
+      setState(() => _errorMessage = 'No se pudieron cargar los datos: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _onSesionChanged(Sesion sesion) async {
+  Future<void> _loadSessionData(Sesion sesion) async {
+    setState(() {
+      _isLoading = true;
+      _estudiantes = [];
+      _participaciones = [];
+      _selectedEstudiante = null;
+    });
+
+    try {
+      final estudiantes =
+          await _repository.obtenerEstudiantesPorGrupo(sesion.grupoId);
+
+      final participaciones =
+          await _repository.obtenerParticipacionesPorSesion(sesion.sesionId!);
+
+      if (!mounted) return;
+
+      setState(() {
+        _estudiantes = estudiantes;
+        _participaciones = participaciones;
+        _selectedEstudiante =
+            estudiantes.isNotEmpty ? estudiantes.first : null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'No se pudo cargar la sesión: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _changeSession(Sesion? sesion) async {
+    if (sesion == null) return;
+
     setState(() {
       _selectedSesion = sesion;
+      _errorMessage = null;
     });
-    try {
-      _estudiantes = await _repository.obtenerEstudiantesPorGrupo(sesion.grupoId);
-      if (_estudiantes.isNotEmpty) {
-        _selectedEstudiante = _estudiantes.first;
-      } else {
-        _selectedEstudiante = null;
-      }
-      _participacionesSesion = await _repository.obtenerParticipacionesPorSesion(sesion.sesionId!);
-      setState(() {});
-    } catch (e) {
-      debugPrint('Error al cambiar de sesión: $e');
-    }
+
+    await _loadSessionData(sesion);
   }
 
-  Future<void> _registrarParticipacion() async {
-    if (_selectedSesion == null || _selectedActividad == null || _selectedEstudiante == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona sesión, actividad y estudiante.')),
-      );
+  Future<void> _registerParticipation() async {
+    if (_isSaving) return;
+
+    if (_selectedSesion == null ||
+        _selectedActividad == null ||
+        _selectedEstudiante == null) {
+      _showMessage('Selecciona una sesión, actividad y estudiante.');
       return;
     }
 
-    final double? puntos = double.tryParse(_puntosController.text);
-    if (puntos == null || puntos <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa una puntuación válida mayor a 0.')),
-      );
+    final pointsText = _pointsController.text.trim().replaceAll(',', '.');
+    final double? points = double.tryParse(pointsText);
+
+    if (points == null || !points.isFinite || points <= 0) {
+      _showMessage('Ingresa una puntuación válida mayor que cero.');
       return;
     }
+
+    setState(() => _isSaving = true);
 
     try {
-      // Generamos un identificador único de operación (UUID o timestamp con IDs)
-      final String operacionId = 'part_${DateTime.now().millisecondsSinceEpoch}';
+      final operationId =
+          'part_${DateTime.now().microsecondsSinceEpoch}_'
+          '${_selectedSesion!.sesionId}_'
+          '${_selectedEstudiante!.estudianteId}';
 
-      final participacion = Participacion(
-        operacionId: operacionId,
+      final participation = Participacion(
         sesionId: _selectedSesion!.sesionId!,
         estudianteId: _selectedEstudiante!.estudianteId!,
         actividadId: _selectedActividad!.actividadId!,
-        puntos: puntos,
+        puntos: points,
         fecha: DateTime.now().toIso8601String(),
+        observacion: _observationController.text.trim().isEmpty
+            ? null
+            : _observationController.text.trim(),
+        operacionId: operationId,
       );
 
-      await _repository.registrarParticipacion(participacion);
-      _puntosController.clear();
+      await _repository.registrarParticipacion(participation);
 
-      // Recargar la lista de participaciones de la sesión
-      _participacionesSesion = await _repository.obtenerParticipacionesPorSesion(_selectedSesion!.sesionId!);
-      setState(() {});
+      final updatedList =
+          await _repository.obtenerParticipacionesPorSesion(
+        _selectedSesion!.sesionId!,
+      );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Participación registrada con éxito!')),
-      );
+
+      setState(() {
+        _participaciones = updatedList;
+        _pointsController.clear();
+        _observationController.clear();
+      });
+
+      _showMessage('Participación registrada correctamente.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      _showMessage('No se pudo registrar la participación: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String _studentName(int id) {
+    for (final student in _estudiantes) {
+      if (student.estudianteId == id) {
+        return '${student.apellidos}, ${student.nombres}';
+      }
+    }
+    return 'Estudiante #$id';
+  }
+
+  String _activityName(int id) {
+    for (final activity in _actividades) {
+      if (activity.actividadId == id) return activity.nombre;
+    }
+    return 'Actividad #$id';
+  }
+
+  String _formatDate(String date) {
+    if (date.length >= 10) {
+      final parts = date.substring(0, 10).split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}/${parts[1]}/${parts[0]}';
+      }
+    }
+    return date;
+  }
+
+  double get _totalPoints {
+    return _participaciones.fold(
+      0,
+      (total, participation) => total + participation.puntos,
+    );
+  }
+
+  Widget _buildHistoryCard(Participacion participation) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: const CircleAvatar(
+          child: Icon(Icons.star, color: Colors.amber),
+        ),
+        title: Text(
+          _studentName(participation.estudianteId),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_activityName(participation.actividadId)),
+            if (participation.observacion != null &&
+                participation.observacion!.isNotEmpty)
+              Text('Observación: ${participation.observacion}'),
+            Text(
+              _formatDate(participation.fecha),
+              style: const TextStyle(fontSize: 11),
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '+${participation.puntos}',
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+              ),
+            ),
+            const Text('puntos', style: TextStyle(fontSize: 11)),
+          ],
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
+
+  Widget _buildEmptyMessage(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(message, textAlign: TextAlign.center),
+      ),
+    );
   }
 
   @override
@@ -126,128 +284,192 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Registro de Participación'),
+        actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _loadInitialData,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Selector de Sesión
-                  DropdownButtonFormField<Sesion>(
-                    initialValue: _selectedSesion,
-                    decoration: const InputDecoration(
-                      labelText: 'Sesión',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _sesiones.map((s) {
-                      return DropdownMenuItem(
-                        value: s,
-                        child: Text('Sesión #${s.sesionId} - ${s.fecha}'),
-                      );
-                    }).toList(),
-                    onChanged: (Sesion? val) {
-                      if (val != null) _onSesionChanged(val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 2. Selector de Actividad
-                  DropdownButtonFormField<Actividad>(
-                    initialValue: _selectedActividad,
-                    decoration: const InputDecoration(
-                      labelText: 'Actividad',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _actividades.map((a) {
-                      return DropdownMenuItem(
-                        value: a,
-                        child: Text(a.nombre),
-                      );
-                    }).toList(),
-                    onChanged: (Actividad? val) {
-                      setState(() => _selectedActividad = val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 3. Selector de Estudiante
-                  DropdownButtonFormField<Estudiante>(
-                    initialValue: _selectedEstudiante,
-                    decoration: const InputDecoration(
-                      labelText: 'Estudiante',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _estudiantes.map((e) {
-                      return DropdownMenuItem(
-                        value: e,
-                        child: Text('${e.apellidos}, ${e.nombres}'),
-                      );
-                    }).toList(),
-                    onChanged: (Estudiante? val) {
-                      setState(() => _selectedEstudiante = val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 4. Input de Puntos y Botón Guardar
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: _puntosController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: const InputDecoration(
-                            labelText: 'Puntos',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 3,
-                        child: ElevatedButton.icon(
-                          onPressed: _registrarParticipacion,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Registrar Puntos'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Participaciones registradas en esta sesión:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const Divider(),
-
-                  // 5. Historial de participaciones en la sesión actual
-                  Expanded(
-                    child: _participacionesSesion.isEmpty
-                        ? const Center(child: Text('No hay registros de participación en esta sesión.'))
-                        : ListView.builder(
-                            itemCount: _participacionesSesion.length,
-                            itemBuilder: (context, index) {
-                              final part = _participacionesSesion[index];
-                              return ListTile(
-                                leading: const CircleAvatar(
-                                  child: Icon(Icons.star, color: Colors.amber),
+          : _errorMessage != null
+              ? _buildEmptyMessage(_errorMessage!)
+              : _sesiones.isEmpty
+                  ? _buildEmptyMessage(
+                      'Todavía no hay sesiones registradas. '
+                      'Primero debes crear una sesión.',
+                    )
+                  : _actividades.isEmpty
+                      ? _buildEmptyMessage(
+                          'No hay actividades activas disponibles.',
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              DropdownButtonFormField<Sesion>(
+                                initialValue: _selectedSesion,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sesión',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.calendar_month),
                                 ),
-                                title: Text('Estudiante ID: ${part.estudianteId}'),
-                                subtitle: Text('Puntos asignados: ${part.puntos}'),
-                                trailing: Text(part.fecha.substring(0, 10)),
-                              );
-                            },
+                                items: _sesiones.map((session) {
+                                  return DropdownMenuItem(
+                                    value: session,
+                                    child: Text(
+                                      'Sesión #${session.sesionId} - '
+                                      '${_formatDate(session.fecha)}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: _changeSession,
+                              ),
+                              const SizedBox(height: 14),
+                              DropdownButtonFormField<Actividad>(
+                                initialValue: _selectedActividad,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Actividad',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.star_outline),
+                                ),
+                                items: _actividades.map((activity) {
+                                  return DropdownMenuItem(
+                                    value: activity,
+                                    child: Text(
+                                      activity.nombre,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() => _selectedActividad = value);
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              DropdownButtonFormField<Estudiante>(
+                                initialValue: _selectedEstudiante,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Estudiante',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.person_outline),
+                                ),
+                                items: _estudiantes.map((student) {
+                                  return DropdownMenuItem(
+                                    value: student,
+                                    child: Text(
+                                      '${student.apellidos}, ${student.nombres}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() => _selectedEstudiante = value);
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: _pointsController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Puntos',
+                                  hintText: 'Ejemplo: 1 o 2.5',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.score_outlined),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: _observationController,
+                                maxLines: 2,
+                                decoration: const InputDecoration(
+                                  labelText: 'Observación (opcional)',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.notes),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _isSaving || _estudiantes.isEmpty
+                                      ? null
+                                      : _registerParticipation,
+                                  icon: _isSaving
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.add),
+                                  label: Text(
+                                    _isSaving
+                                        ? 'Guardando...'
+                                        : 'Registrar participación',
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_estudiantes.isEmpty) ...[
+                                const SizedBox(height: 10),
+                                const Text(
+                                  'No hay estudiantes activos incorporados '
+                                  'al grupo de esta sesión.',
+                                  style: TextStyle(color: Colors.orange),
+                                ),
+                              ],
+                              const SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Historial de participación',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Chip(
+                                    avatar: const Icon(
+                                      Icons.stars,
+                                      size: 17,
+                                    ),
+                                    label: Text(
+                                      'Total: ${_totalPoints.toStringAsFixed(2)}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              if (_participaciones.isEmpty)
+                                _buildEmptyMessage(
+                                  'Todavía no hay participaciones registradas '
+                                  'en esta sesión.',
+                                )
+                              else
+                                ..._participaciones.map(_buildHistoryCard),
+                            ],
                           ),
-                  ),
-                ],
-              ),
-            ),
+                        ),
     );
   }
 }

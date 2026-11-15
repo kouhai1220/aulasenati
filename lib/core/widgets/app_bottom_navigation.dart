@@ -20,12 +20,22 @@ class AppBottomNavigation extends StatelessWidget {
     BottomNavigationBarItem(
       icon: Icon(Icons.groups_outlined),
       activeIcon: Icon(Icons.groups),
-      label: 'Mis grupos',
+      label: 'Grupos',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.calendar_month_outlined),
       activeIcon: Icon(Icons.calendar_month),
       label: 'Sesiones',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.fact_check_outlined),
+      activeIcon: Icon(Icons.fact_check),
+      label: 'Asistencia',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.stars_outlined),
+      activeIcon: Icon(Icons.stars),
+      label: 'Participación',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.bar_chart_outlined),
@@ -40,6 +50,8 @@ class AppBottomNavigation extends StatelessWidget {
       currentIndex: currentIndex,
       onTap: onTap,
       items: items,
+      type: BottomNavigationBarType.fixed,
+      showUnselectedLabels: true,
     );
   }
 }

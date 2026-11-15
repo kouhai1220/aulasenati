@@ -9,6 +9,8 @@ import 'core/widgets/app_bottom_navigation.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/groups/groups_screen.dart';
 import 'features/sessions/sessions_screen.dart';
+import 'features/attendance/attendance_screen.dart';
+import 'features/participation/participation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,8 +46,7 @@ class MainNavigationScreen extends StatefulWidget {
       _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState
-    extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   void _changePage(int index) {
@@ -61,14 +62,13 @@ class _MainNavigationScreenState
         index: _currentIndex,
         children: [
           DashboardScreen(
-  onNavigate: _changePage,
-  isActive: _currentIndex == 0,
-),
-
+            onNavigate: _changePage,
+            isActive: _currentIndex == 0,
+          ),
           GroupsScreen(),
-
           const SessionsScreen(),
-          
+          const AttendanceScreen(),
+          const ParticipationScreen(),
           _buildPlaceholder(
             'Reportes y Exportación',
             Icons.bar_chart,
@@ -82,10 +82,7 @@ class _MainNavigationScreenState
     );
   }
 
-  Widget _buildPlaceholder(
-    String title,
-    IconData icon,
-  ) {
+  Widget _buildPlaceholder(String title, IconData icon) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -110,9 +107,7 @@ class _MainNavigationScreenState
             const SizedBox(height: 8),
             const Text(
               'Módulo pendiente de implementación.',
-              style: TextStyle(
-                color: Colors.blueGrey,
-              ),
+              style: TextStyle(color: Colors.blueGrey),
             ),
           ],
         ),
