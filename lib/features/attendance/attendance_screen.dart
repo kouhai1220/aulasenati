@@ -1,4 +1,12 @@
 
+// ============================================================================
+// PANTALLA: CONTROL DE ASISTENCIA
+// ----------------------------------------------------------------------------
+// Permite registrar la asistencia de los estudiantes de una sesión. Para cada
+// estudiante se elige: Presente, Tardanza, Falta o Justificado. Arriba se
+// muestra un resumen con los conteos de cada estado.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/local_repository.dart';
@@ -46,6 +54,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Carga las sesiones y selecciona la primera por defecto.
   Future<void> _loadInitialData() async {
     setState(() {
       _isLoading = true;
@@ -78,6 +87,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Carga los estudiantes del grupo de la sesión y su asistencia ya guardada.
   Future<void> _loadStudentsAndAttendance(Sesion sesion) async {
     setState(() {
       _isLoading = true;
@@ -110,6 +120,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Cambia la sesión seleccionada y recarga su asistencia.
   Future<void> _changeSession(Sesion? sesion) async {
     if (sesion == null) return;
 
@@ -117,6 +128,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     await _loadStudentsAndAttendance(sesion);
   }
 
+  // Guarda el estado de asistencia elegido para un estudiante.
   Future<void> _registerAttendance(
     int estudianteId,
     String estado,
@@ -157,6 +169,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Devuelve la etiqueta legible de un estado de asistencia.
   String _statusLabel(String estado) {
     switch (estado) {
       case 'presente':
@@ -172,6 +185,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Elemento del resumen (número + etiqueta con color).
   Widget _summaryItem(String label, int count, Color color) {
     return Expanded(
       child: Container(
@@ -207,6 +221,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
+  // Cabecera con el resumen de conteos por estado de asistencia.
   Widget _buildSummary() {
     final presentes =
         _asistenciasMap.values.where((e) => e == 'presente').length;
@@ -249,6 +264,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
+  // Tarjeta de un estudiante con sus botones de estado de asistencia.
   Widget _buildStudentCard(Estudiante estudiante) {
     final id = estudiante.estudianteId!;
     final estadoActual = _asistenciasMap[id];
@@ -315,6 +331,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 
+  // Devuelve el color asociado a cada estado de asistencia.
   Color _statusColor(String estado) {
     switch (estado) {
       case 'presente':
@@ -330,6 +347,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
+  // Botón de un estado (se resalta cuando está seleccionado).
   Widget _statusButton(
     int estudianteId,
     String estado,

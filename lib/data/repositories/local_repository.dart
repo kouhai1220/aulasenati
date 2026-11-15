@@ -1,3 +1,11 @@
+// ============================================================================
+// REPOSITORIO LOCAL (CAPA DE ACCESO A DATOS)
+// ----------------------------------------------------------------------------
+// Centraliza TODAS las operaciones contra la base de datos SQLite (insertar,
+// consultar, actualizar). Las pantallas de la app usan esta clase en lugar de
+// escribir SQL directamente, manteniendo el código de la interfaz más limpio.
+// ============================================================================
+
 import 'package:sqflite/sqflite.dart';
 
 import '../local/database_helper.dart';
@@ -11,6 +19,7 @@ import '../../models/actividad.dart';
 import '../../models/participacion.dart';
 
 class LocalRepository {
+  // Se reutiliza la conexión única que entrega DatabaseHelper.
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   // Getter corregido de la base de datos
@@ -22,6 +31,7 @@ class LocalRepository {
   // INSTRUCTORES
   // ============================================================
 
+  // Registra un nuevo instructor en la base de datos.
   Future<int> insertarInstructor(Instructor instructor) async {
     final db = await _database;
     return db.insert(
@@ -31,6 +41,7 @@ class LocalRepository {
     );
   }
 
+  // Devuelve todos los instructores ordenados por nombre.
   Future<List<Instructor>> obtenerInstructores() async {
     final db = await _database;
     final resultado = await db.query(
@@ -40,6 +51,7 @@ class LocalRepository {
     return resultado.map((e) => Instructor.fromMap(e)).toList();
   }
 
+  // Busca un instructor por su correo (o null si no existe).
   Future<Instructor?> obtenerInstructorPorCorreo(String correo) async {
     final db = await _database;
     final resultado = await db.query(
@@ -56,6 +68,7 @@ class LocalRepository {
   // GRUPOS
   // ============================================================
 
+  // Crea un nuevo grupo (sección) en la base de datos.
   Future<int> insertarGrupo(Grupo grupo) async {
     final db = await _database;
     return db.insert(
@@ -65,6 +78,7 @@ class LocalRepository {
     );
   }
 
+  // Lista los grupos ACTIVOS, mostrando primero los más recientes.
   Future<List<Grupo>> obtenerGrupos() async {
     final db = await _database;
     final resultado = await db.query(
@@ -76,6 +90,7 @@ class LocalRepository {
     return resultado.map((e) => Grupo.fromMap(e)).toList();
   }
 
+  // Busca un grupo por su id (o null si no existe).
   Future<Grupo?> obtenerGrupoPorId(int grupoId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -92,6 +107,7 @@ class LocalRepository {
   // ESTUDIANTES
   // ============================================================
 
+  // Registra un nuevo estudiante en la base de datos.
   Future<int> insertarEstudiante(Estudiante estudiante) async {
     final db = await _database;
     return db.insert(
@@ -101,6 +117,7 @@ class LocalRepository {
     );
   }
 
+  // Lista los estudiantes ACTIVOS ordenados por apellido.
   Future<List<Estudiante>> obtenerEstudiantes() async {
     final db = await _database;
     final resultado = await db.query(
@@ -112,6 +129,7 @@ class LocalRepository {
     return resultado.map((e) => Estudiante.fromMap(e)).toList();
   }
 
+  // Busca un estudiante por su id (o null si no existe).
   Future<Estudiante?> obtenerEstudiantePorId(int estudianteId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -128,6 +146,7 @@ class LocalRepository {
   // RELACIÓN GRUPO - ESTUDIANTE
   // ============================================================
 
+  // Vincula (incorpora) un estudiante a un grupo.
   Future<void> incorporarEstudianteAGrupo(GrupoEstudiante relacion) async {
     final db = await _database;
     await db.insert(
@@ -137,6 +156,8 @@ class LocalRepository {
     );
   }
 
+  // Devuelve los estudiantes ACTIVOS que pertenecen a un grupo.
+  // Usa un JOIN entre estudiante y la tabla intermedia grupo_estudiante.
   Future<List<Estudiante>> obtenerEstudiantesPorGrupo(int grupoId) async {
     final db = await _database;
     final resultado = await db.rawQuery('''
@@ -152,6 +173,7 @@ class LocalRepository {
     return resultado.map((e) => Estudiante.fromMap(e)).toList();
   }
 
+  // Indica si un estudiante pertenece (activamente) a un grupo.
   Future<bool> perteneceAGrupo(int grupoId, int estudianteId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -167,6 +189,7 @@ class LocalRepository {
   // SESIONES
   // ============================================================
 
+  // Crea una nueva sesión (clase) para un grupo.
   Future<int> insertarSesion(Sesion sesion) async {
     final db = await _database;
     return db.insert(
@@ -176,6 +199,7 @@ class LocalRepository {
     );
   }
 
+  // Lista todas las sesiones, de la más reciente a la más antigua.
   Future<List<Sesion>> obtenerSesiones() async {
     final db = await _database;
     final resultado = await db.query(
@@ -185,6 +209,7 @@ class LocalRepository {
     return resultado.map((e) => Sesion.fromMap(e)).toList();
   }
 
+  // Lista las sesiones de un grupo específico (para los reportes por grupo).
   Future<List<Sesion>> obtenerSesionesPorGrupo(int grupoId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -200,6 +225,12 @@ class LocalRepository {
   // ASISTENCIA
   // ============================================================
 
+  // Guarda (crea o actualiza) la asistencia de un estudiante en una sesión.
+  // Se ejecuta dentro de una TRANSACCIÓN para validar todo antes de escribir:
+  //   1. El estado debe ser uno de los permitidos.
+  //   2. La sesión debe existir.
+  //   3. El estudiante debe pertenecer al grupo de esa sesión.
+  // Si ya existía un registro para esa sesión/estudiante, lo ACTUALIZA.
   Future<int> guardarAsistencia(Asistencia asistencia) async {
     const estadosPermitidos = ['presente', 'tardanza', 'falta', 'justificado'];
 
@@ -210,6 +241,7 @@ class LocalRepository {
     final db = await _database;
 
     return db.transaction((txn) async {
+      // Verifica que la sesión exista.
       final sesion = await txn.query(
         'sesion',
         where: 'sesion_id = ?',
@@ -223,6 +255,7 @@ class LocalRepository {
 
       final grupoId = sesion.first['grupo_id'] as int;
 
+      // Verifica que el estudiante pertenezca al grupo de la sesión.
       final pertenencia = await txn.query(
         'grupo_estudiante',
         where: 'grupo_id = ? AND estudiante_id = ? AND estado = ?',
@@ -234,6 +267,7 @@ class LocalRepository {
         throw Exception('El estudiante no pertenece al grupo de esta sesión.');
       }
 
+      // Busca si ya había un registro previo de asistencia.
       final existente = await txn.query(
         'asistencia',
         where: 'sesion_id = ? AND estudiante_id = ?',
@@ -241,12 +275,14 @@ class LocalRepository {
         limit: 1,
       );
 
+      // Prepara los datos a escribir (sin id ni fecha de registro original).
       final datos = asistencia.toMap()
         ..remove('asistencia_id')
         ..remove('fecha_registro');
 
       datos['fecha_actualizacion'] = DateTime.now().toIso8601String();
 
+      // Si ya existía, se actualiza; si no, se inserta uno nuevo.
       if (existente.isNotEmpty) {
         return txn.update(
           'asistencia',
@@ -264,6 +300,7 @@ class LocalRepository {
     });
   }
 
+  // Devuelve todas las asistencias registradas en una sesión.
   Future<List<Asistencia>> obtenerAsistenciasPorSesion(int sesionId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -275,6 +312,7 @@ class LocalRepository {
     return resultado.map((e) => Asistencia.fromMap(e)).toList();
   }
 
+  // Devuelve todo el historial de asistencias de un estudiante.
   Future<List<Asistencia>> obtenerAsistenciasPorEstudiante(int estudianteId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -290,6 +328,7 @@ class LocalRepository {
   // ACTIVIDADES Y PARTICIPACIÓN
   // ============================================================
 
+  // Crea un nuevo tipo de actividad puntuable.
   Future<int> insertarActividad(Actividad actividad) async {
     final db = await _database;
     return db.insert(
@@ -299,6 +338,7 @@ class LocalRepository {
     );
   }
 
+  // Lista las actividades activas ordenadas por nombre.
   Future<List<Actividad>> obtenerActividades() async {
     final db = await _database;
     final resultado = await db.query(
@@ -310,6 +350,13 @@ class LocalRepository {
     return resultado.map((e) => Actividad.fromMap(e)).toList();
   }
 
+  // Registra puntos de participación de un estudiante.
+  // Se ejecuta en una TRANSACCIÓN que valida, en orden:
+  //   1. Que los puntos sean mayores que cero.
+  //   2. Que no exista ya la misma operación (evita duplicados).
+  //   3. Que la sesión exista.
+  //   4. Que el estudiante pertenezca al grupo de la sesión.
+  //   5. Que la actividad exista y esté activa.
   Future<int> registrarParticipacion(Participacion participacion) async {
     if (participacion.puntos <= 0) {
       throw ArgumentError('Los puntos deben ser mayores que cero.');
@@ -318,6 +365,7 @@ class LocalRepository {
     final db = await _database;
 
     return db.transaction((txn) async {
+      // Si la operación ya fue registrada, devuelve su id (evita duplicados).
       final operacionExistente = await txn.query(
         'participacion',
         where: 'operacion_id = ?',
@@ -329,6 +377,7 @@ class LocalRepository {
         return operacionExistente.first['participacion_id'] as int;
       }
 
+      // Verifica que la sesión exista.
       final sesion = await txn.query(
         'sesion',
         where: 'sesion_id = ?',
@@ -342,6 +391,7 @@ class LocalRepository {
 
       final grupoId = sesion.first['grupo_id'] as int;
 
+      // Verifica que el estudiante pertenezca al grupo de la sesión.
       final pertenencia = await txn.query(
         'grupo_estudiante',
         where: 'grupo_id = ? AND estudiante_id = ? AND estado = ?',
@@ -353,6 +403,7 @@ class LocalRepository {
         throw Exception('El estudiante no pertenece al grupo de esta sesión.');
       }
 
+      // Verifica que la actividad exista y esté activa.
       final actividad = await txn.query(
         'actividad',
         where: 'actividad_id = ? AND estado = ?',
@@ -364,6 +415,7 @@ class LocalRepository {
         throw Exception('La actividad no existe o está inactiva.');
       }
 
+      // Inserta el registro de participación.
       return txn.insert(
         'participacion',
         participacion.toMap(),
@@ -372,6 +424,7 @@ class LocalRepository {
     });
   }
 
+  // Devuelve las participaciones (puntos) registradas en una sesión.
   Future<List<Participacion>> obtenerParticipacionesPorSesion(int sesionId) async {
     final db = await _database;
     final resultado = await db.query(
@@ -388,6 +441,11 @@ class LocalRepository {
   // REPORTES - CALIFICACIONES CONSOLIDADAS
   // ============================================================
 
+  // Genera el reporte de calificaciones: por cada estudiante del grupo,
+  // suma TODOS sus puntos de participación (columna total_puntos).
+  // Parámetros opcionales:
+  //   - sesionId    : limita la suma a una sola sesión.
+  //   - estudianteId: limita el resultado a un solo estudiante.
   Future<List<Map<String, dynamic>>> obtenerReporteCalificaciones({
     required int grupoId,
     int? sesionId,

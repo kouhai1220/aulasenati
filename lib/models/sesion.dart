@@ -1,3 +1,11 @@
+// ============================================================================
+// MODELO: SESION
+// ----------------------------------------------------------------------------
+// Representa una sesión o clase de un grupo, con su fecha y tema.
+//   - fromMap(): fila de la BD -> objeto Sesion.
+//   - toMap()  : objeto Sesion -> mapa para guardar en la BD.
+// ============================================================================
+
 class Sesion {
   final int? sesionId;
   final int grupoId;
@@ -19,6 +27,7 @@ class Sesion {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea una Sesion desde una fila (mapa) de la base de datos.
   factory Sesion.fromMap(Map<String, dynamic> map) {
     return Sesion(
       sesionId: map['sesion_id'] as int?,
@@ -32,6 +41,7 @@ class Sesion {
     );
   }
 
+  // Convierte la Sesion en un mapa para insertarla/actualizarla en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (sesionId != null) 'sesion_id': sesionId,

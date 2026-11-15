@@ -1,3 +1,12 @@
+// ============================================================================
+// MODELO: GRUPO
+// ----------------------------------------------------------------------------
+// Representa un grupo o sección de estudiantes (ej. "2026-20-202601"),
+// asociado a un instructor y a un periodo académico.
+//   - fromMap(): fila de la BD -> objeto Grupo.
+//   - toMap()  : objeto Grupo  -> mapa para guardar en la BD.
+// ============================================================================
+
 class Grupo {
   final int? grupoId;
   final String codigo;
@@ -21,6 +30,7 @@ class Grupo {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea un Grupo desde una fila (mapa) de la base de datos.
   factory Grupo.fromMap(Map<String, dynamic> map) {
     return Grupo(
       grupoId: map['grupo_id'] as int?,
@@ -35,6 +45,7 @@ class Grupo {
     );
   }
 
+  // Convierte el Grupo en un mapa para insertarlo/actualizarlo en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (grupoId != null) 'grupo_id': grupoId,

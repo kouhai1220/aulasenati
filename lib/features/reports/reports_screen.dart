@@ -1,4 +1,12 @@
 
+// ============================================================================
+// PANTALLA: REPORTES Y EXPORTACIÓN
+// ----------------------------------------------------------------------------
+// Genera un reporte consolidado de calificaciones (puntos por estudiante) con
+// filtros por grupo, sesión y búsqueda por nombre/código. Permite exportar el
+// resultado a PDF y a Excel (compartiéndolo con otras aplicaciones).
+// ============================================================================
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -50,6 +58,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // CARGA DE INFORMACIÓN
   // ============================================================
 
+  // Carga todos los grupos y selecciona el primero del desplegable.
   Future<void> _cargarGrupos() async {
     try {
       final grupos = await _repository.obtenerGrupos();
@@ -73,6 +82,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  // Carga las sesiones del grupo seleccionado.
   Future<void> _cargarSesiones() async {
     if (_grupoId == null) return;
 
@@ -93,6 +103,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  // Obtiene el reporte de calificaciones según los filtros seleccionados.
   Future<void> _cargarReporte() async {
     if (_grupoId == null) return;
 
@@ -123,6 +134,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   // FILTROS Y RESUMEN
   // ============================================================
 
+  // Filtra el reporte por texto (nombre o código institucional).
   List<Map<String, dynamic>> get _reporteFiltrado {
     if (_busqueda.trim().isEmpty) return _reporte;
 
@@ -140,6 +152,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }).toList();
   }
 
+  // Suma los puntos de todos los estudiantes del reporte filtrado.
   double get _totalPuntos {
     return _reporteFiltrado.fold<double>(
       0,
@@ -148,6 +161,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  // Devuelve "código - nombre" del grupo seleccionado.
   String _nombreGrupo() {
     final grupo = _grupos.where((g) => g.grupoId == _grupoId);
 
@@ -156,6 +170,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return '${grupo.first.codigo} - ${grupo.first.nombre}';
   }
 
+  // Devuelve el periodo del grupo seleccionado.
   String _periodoGrupo() {
     final grupo = _grupos.where((g) => g.grupoId == _grupoId);
 
@@ -164,6 +179,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return grupo.first.periodo.toString();
   }
 
+  // Da formato dd/mm/aaaa a una fecha ISO (texto).
   String _formatearFecha(String fecha) {
     final date = DateTime.tryParse(fecha);
 
@@ -174,6 +190,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         '${date.year}';
   }
 
+  // Devuelve la fecha actual en formato dd/mm/aaaa.
   String _fechaActual() {
     final fecha = DateTime.now();
 
@@ -182,6 +199,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         '${fecha.year}';
   }
 
+  // Arma el nombre del archivo con marca de tiempo y la extensión indicada.
   String _nombreArchivo(String extension) {
     final ahora = DateTime.now();
 
@@ -196,6 +214,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return 'reporte_calificaciones_$marcaTiempo.$extension';
   }
 
+  // Muestra un mensaje emergente (SnackBar) si la pantalla sigue activa.
   void _mostrarMensaje(String mensaje) {
     if (!mounted) return;
 

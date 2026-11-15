@@ -1,11 +1,22 @@
 
+// ============================================================================
+// DEFINICIÓN DEL ESQUEMA DE LA BASE DE DATOS (TABLAS SQL)
+// ----------------------------------------------------------------------------
+// Contiene el "script" SQL de creación de cada tabla del sistema. Estas tablas
+// modelan el dominio académico: instructor, grupo, estudiante, sesión,
+// asistencia, actividad y participación.
+// ============================================================================
+
 class DatabaseTables {
   // Estados de sincronización local
+  // (la app es offline; este campo se usa para una futura sincronización
+  //  con un servidor, marcando si un registro está pendiente o ya subido).
   static const String syncPending = 'pending';
   static const String syncSynced = 'synced';
   static const String syncError = 'error';
 
   // 1. INSTRUCTOR
+  // Datos del docente que usa el sistema (nombre, correo, estado).
   static const String instructor = '''
     CREATE TABLE instructor (
       instructor_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +31,7 @@ class DatabaseTables {
   ''';
 
   // 2. GRUPO
+  // Grupo o sección de estudiantes, asociado a un instructor.
   static const String grupo = '''
     CREATE TABLE grupo (
       grupo_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +50,7 @@ class DatabaseTables {
   ''';
 
   // 3. ESTUDIANTE
+  // Datos personales y código institucional del estudiante.
   static const String estudiante = '''
     CREATE TABLE estudiante (
       estudiante_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +65,8 @@ class DatabaseTables {
   ''';
 
   // 4. GRUPO_ESTUDIANTE
+  // Tabla intermedia: relaciona qué estudiantes pertenecen a qué grupo
+  // (relación muchos-a-muchos entre grupo y estudiante).
   static const String grupoEstudiante = '''
     CREATE TABLE grupo_estudiante (
       grupo_id INTEGER NOT NULL,
@@ -73,6 +88,7 @@ class DatabaseTables {
   ''';
 
   // 5. SESION
+  // Cada clase o encuentro académico de un grupo, con fecha y tema.
   static const String sesion = '''
     CREATE TABLE sesion (
       sesion_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +106,8 @@ class DatabaseTables {
   ''';
 
   // 6. ASISTENCIA
+  // Registro de asistencia de un estudiante en una sesión.
+  // El estado solo admite: presente, tardanza, falta o justificado.
   static const String asistencia = '''
     CREATE TABLE asistencia (
       asistencia_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,6 +139,7 @@ class DatabaseTables {
   ''';
 
   // 7. ACTIVIDAD
+  // Tipo de actividad que otorga puntos (ej. "Participación en clase").
   static const String actividad = '''
     CREATE TABLE actividad (
       actividad_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,6 +154,8 @@ class DatabaseTables {
   ''';
 
   // 8. PARTICIPACION
+  // Puntos otorgados a un estudiante en una sesión por una actividad.
+  // "operacion_id" evita registrar dos veces la misma operación (idempotencia).
   static const String participacion = '''
     CREATE TABLE participacion (
       participacion_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,6 +184,7 @@ class DatabaseTables {
   ''';
 
   // Orden de creación de las tablas
+  // (respeta las dependencias: primero las que no tienen claves foráneas).
   static const List<String> allTables = [
     instructor,
     grupo,

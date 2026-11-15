@@ -1,3 +1,10 @@
+// ============================================================================
+// MODELO: ACTIVIDAD
+// ----------------------------------------------------------------------------
+// Representa un tipo de actividad puntuable (ej. "Participación en clase"),
+// con su valor de puntuación por defecto.
+// ============================================================================
+
 class Actividad {
   final int? actividadId;
   final String nombre;
@@ -19,6 +26,7 @@ class Actividad {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea una Actividad desde una fila (mapa) de la base de datos.
   factory Actividad.fromMap(Map<String, dynamic> map) {
     return Actividad(
       actividadId: map['actividad_id'] as int?,
@@ -32,6 +40,7 @@ class Actividad {
     );
   }
 
+  // Convierte la Actividad en un mapa para insertarla/actualizarla en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (actividadId != null) 'actividad_id': actividadId,

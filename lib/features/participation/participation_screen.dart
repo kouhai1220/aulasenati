@@ -1,4 +1,12 @@
 
+// ============================================================================
+// PANTALLA: REGISTRO DE PARTICIPACIÓN (PUNTOS)
+// ----------------------------------------------------------------------------
+// Permite otorgar puntos a un estudiante por una actividad dentro de una
+// sesión. Abajo se muestra el historial de participaciones de la sesión y el
+// total acumulado de puntos.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/local_repository.dart';
@@ -61,6 +69,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     super.dispose();
   }
 
+  // Carga sesiones y actividades, y selecciona la primera de cada lista.
   Future<void> _loadInitialData() async {
     setState(() {
       _isLoading = true;
@@ -96,6 +105,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     }
   }
 
+  // Carga los estudiantes del grupo de la sesión y sus participaciones.
   Future<void> _loadSessionData(Sesion sesion) async {
     setState(() {
       _isLoading = true;
@@ -127,6 +137,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     }
   }
 
+  // Cambia la sesión seleccionada y recarga sus datos.
   Future<void> _changeSession(Sesion? sesion) async {
     if (sesion == null) return;
 
@@ -138,6 +149,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     await _loadSessionData(sesion);
   }
 
+  // Valida los datos y registra una nueva participación (puntos).
   Future<void> _registerParticipation() async {
     if (_isSaving) return;
 
@@ -200,6 +212,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     }
   }
 
+  // Muestra un mensaje emergente (SnackBar).
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -209,6 +222,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     );
   }
 
+  // Devuelve "apellidos, nombres" del estudiante a partir de su id.
   String _studentName(int id) {
     for (final student in _estudiantes) {
       if (student.estudianteId == id) {
@@ -218,6 +232,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     return 'Estudiante #$id';
   }
 
+  // Devuelve el nombre de la actividad a partir de su id.
   String _activityName(int id) {
     for (final activity in _actividades) {
       if (activity.actividadId == id) return activity.nombre;
@@ -225,6 +240,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     return 'Actividad #$id';
   }
 
+  // Convierte una fecha ISO (texto) al formato dd/mm/aaaa.
   String _formatDate(String date) {
     if (date.length >= 10) {
       final parts = date.substring(0, 10).split('-');
@@ -235,6 +251,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     return date;
   }
 
+  // Suma todos los puntos de las participaciones mostradas.
   double get _totalPoints {
     return _participaciones.fold(
       0,
@@ -242,6 +259,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     );
   }
 
+  // Tarjeta que muestra una participación del historial.
   Widget _buildHistoryCard(Participacion participation) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -285,6 +303,7 @@ class _ParticipationScreenState extends State<ParticipationScreen> {
     );
   }
 
+  // Mensaje centrado para estados vacíos o de error.
   Widget _buildEmptyMessage(String message) {
     return Center(
       child: Padding(

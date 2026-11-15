@@ -1,4 +1,11 @@
 
+// ============================================================================
+// PANTALLA: GESTIÓN DE GRUPOS
+// ----------------------------------------------------------------------------
+// Lista los grupos (secciones) registrados y permite crear uno nuevo con el
+// botón "+". Al tocar un grupo se abre la pantalla de sus estudiantes.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 // Elimina el import de AppConstants.
@@ -22,6 +29,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   bool _loading = true;
   String? _error;
 
+  // Correo del instructor que se registra por defecto.
   static const String _correoInstructor = 'jluque@senati.pe';
 
   @override
@@ -30,6 +38,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     _initialize();
   }
 
+  // Inicializa la pantalla: asegura que exista el instructor y carga grupos.
   Future<void> _initialize() async {
     try {
       // Registrar al instructor inicial si todavía no existe.
@@ -63,6 +72,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     }
   }
 
+  // Obtiene la lista de grupos desde la base de datos.
   Future<void> _cargarGrupos() async {
     final grupos = await _repository.obtenerGrupos();
 
@@ -75,6 +85,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     });
   }
 
+  // Abre el diálogo para crear un grupo y recarga si se guardó.
   Future<void> _abrirFormulario() async {
     final resultado = await showDialog<bool>(
       context: context,
@@ -102,6 +113,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     );
   }
 
+  // Construye el cuerpo según el estado: cargando, error, vacío o lista.
   Widget _buildBody() {
     if (_loading) {
       return const Center(

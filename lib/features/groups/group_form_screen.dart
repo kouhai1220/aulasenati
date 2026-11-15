@@ -1,4 +1,11 @@
 
+// ============================================================================
+// FORMULARIO: NUEVO GRUPO
+// ----------------------------------------------------------------------------
+// Diálogo con un formulario para crear un grupo (código, nombre y periodo).
+// Valida que no exista un grupo con el mismo código y lo guarda en la BD.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/local_repository.dart';
@@ -31,6 +38,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
     super.dispose();
   }
 
+  // Valida el formulario, evita códigos duplicados y guarda el grupo.
   Future<void> _guardarGrupo() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -155,6 +163,7 @@ class _GroupFormScreenState extends State<GroupFormScreen> {
     );
   }
 
+  // Campo de texto reutilizable con validación de "obligatorio".
   Widget _buildField({
     required TextEditingController controller,
     required String label,

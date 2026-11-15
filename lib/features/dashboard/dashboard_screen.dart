@@ -1,4 +1,13 @@
 
+// ============================================================================
+// PANTALLA: PANEL DE INICIO (DASHBOARD)
+// ----------------------------------------------------------------------------
+// Primera pantalla que ve el instructor al abrir la app. Muestra:
+//   - Una tarjeta de bienvenida.
+//   - Tarjetas informativas (cantidad de grupos y estado del sistema).
+//   - Accesos rápidos a las secciones principales.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -6,7 +15,10 @@ import '../../core/theme/app_theme.dart';
 import '../../data/repositories/local_repository.dart';
 
 class DashboardScreen extends StatefulWidget {
+  // Permite navegar a otra pestaña (recibe el índice de destino).
   final ValueChanged<int> onNavigate;
+
+  // Indica si esta pantalla está visible actualmente.
   final bool isActive;
 
   const DashboardScreen({
@@ -41,6 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // Consulta a la base de datos cuántos grupos hay registrados.
   Future<void> _loadGroupCount() async {
     try {
       final grupos = await _repository.obtenerGrupos();
@@ -99,6 +112,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Tarjeta superior de bienvenida (con degradado azul).
   Widget _buildWelcomeCard() {
     return Container(
       width: double.infinity,
@@ -150,6 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Fila con las dos tarjetas informativas (grupos y estado del sistema).
   Widget _buildInformationCards() {
     return Row(
       children: [
@@ -177,6 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Tarjeta informativa reutilizable (ícono + título + valor).
   Widget _buildInfoCard({
     required IconData icon,
     required Color iconColor,
@@ -228,6 +244,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Cuadrícula de accesos rápidos a las secciones de la app.
   Widget _buildQuickAccessGrid() {
     final items = [
       _QuickAccessItem(
@@ -305,6 +322,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+// Datos de cada botón de acceso rápido (título, ícono, color y destino).
 class _QuickAccessItem {
   final String title;
   final IconData icon;

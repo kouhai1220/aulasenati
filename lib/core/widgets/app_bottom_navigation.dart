@@ -1,8 +1,18 @@
 
+// ============================================================================
+// BARRA DE NAVEGACIÓN INFERIOR
+// ----------------------------------------------------------------------------
+// Widget reutilizable que muestra las 6 secciones principales de la app:
+// Inicio, Grupos, Sesiones, Asistencia, Participación y Reportes.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 class AppBottomNavigation extends StatelessWidget {
+  // Índice de la pestaña seleccionada actualmente.
   final int currentIndex;
+
+  // Callback que se dispara al pulsar una pestaña (entrega el nuevo índice).
   final ValueChanged<int> onTap;
 
   const AppBottomNavigation({
@@ -11,6 +21,7 @@ class AppBottomNavigation extends StatelessWidget {
     required this.onTap,
   });
 
+  // Definición de cada ítem (ícono normal, ícono activo y etiqueta).
   static const List<BottomNavigationBarItem> items = [
     BottomNavigationBarItem(
       icon: Icon(Icons.home_outlined),
@@ -50,6 +61,7 @@ class AppBottomNavigation extends StatelessWidget {
       currentIndex: currentIndex,
       onTap: onTap,
       items: items,
+      // "fixed" muestra todas las pestañas siempre visibles.
       type: BottomNavigationBarType.fixed,
       showUnselectedLabels: true,
     );

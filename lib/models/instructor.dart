@@ -1,3 +1,11 @@
+// ============================================================================
+// MODELO: INSTRUCTOR
+// ----------------------------------------------------------------------------
+// Representa al docente que usa el sistema.
+//   - fromMap(): convierte una fila de la base de datos en un objeto.
+//   - toMap()  : convierte el objeto en un mapa para guardarlo en la BD.
+// ============================================================================
+
 class Instructor {
   final int? instructorId;
   final String nombres;
@@ -19,6 +27,7 @@ class Instructor {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea un Instructor desde una fila (mapa) de la base de datos.
   factory Instructor.fromMap(Map<String, dynamic> map) {
     return Instructor(
       instructorId: map['instructor_id'] as int?,
@@ -32,6 +41,7 @@ class Instructor {
     );
   }
 
+  // Convierte el Instructor en un mapa para insertarlo/actualizarlo en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (instructorId != null) 'instructor_id': instructorId,

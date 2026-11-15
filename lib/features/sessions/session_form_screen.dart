@@ -1,4 +1,11 @@
 
+// ============================================================================
+// FORMULARIO: NUEVA SESIÓN
+// ----------------------------------------------------------------------------
+// Permite crear una sesión eligiendo un grupo, una fecha y un tema.
+// Si no hay grupos registrados, avisa que primero hay que crear uno.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -41,6 +48,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     super.dispose();
   }
 
+  // Carga la lista de grupos disponibles para el desplegable.
   Future<void> _loadGroups() async {
     try {
       final grupos = await _repository.obtenerGrupos();
@@ -64,6 +72,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     }
   }
 
+  // Abre el selector de fecha de la sesión.
   Future<void> _selectDate() async {
     final date = await showDatePicker(
       context: context,
@@ -82,12 +91,14 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     }
   }
 
+  // Da formato dd/mm/aaaa a una fecha.
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
   }
 
+  // Valida los datos y guarda la nueva sesión en la base de datos.
   Future<void> _saveSession() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -146,6 +157,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     );
   }
 
+  // Construye el formulario (grupo, fecha, tema y botón guardar).
   Widget _buildForm() {
     if (_grupos.isEmpty) {
       return const Center(

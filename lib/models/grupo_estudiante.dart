@@ -1,3 +1,10 @@
+// ============================================================================
+// MODELO: GRUPO_ESTUDIANTE (relación)
+// ----------------------------------------------------------------------------
+// Representa la pertenencia de un estudiante a un grupo (relación N a N entre
+// Grupo y Estudiante). Guarda la fecha en que el estudiante se incorporó.
+// ============================================================================
+
 class GrupoEstudiante {
   final int grupoId;
   final int estudianteId;
@@ -17,6 +24,7 @@ class GrupoEstudiante {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea la relación desde una fila (mapa) de la base de datos.
   factory GrupoEstudiante.fromMap(Map<String, dynamic> map) {
     return GrupoEstudiante(
       grupoId: map['grupo_id'] as int,
@@ -29,6 +37,7 @@ class GrupoEstudiante {
     );
   }
 
+  // Convierte la relación en un mapa para guardarla en la BD.
   Map<String, dynamic> toMap() {
     return {
       'grupo_id': grupoId,

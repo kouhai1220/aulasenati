@@ -1,3 +1,10 @@
+// ============================================================================
+// PANTALLA: ESTUDIANTES DE UN GRUPO
+// ----------------------------------------------------------------------------
+// Muestra los estudiantes asignados a un grupo y permite añadir nuevos
+// (eligiendo uno ya registrado o creando uno desde cero).
+// ============================================================================
+
 import 'package:flutter/material.dart';
 import '../../data/repositories/local_repository.dart';
 import '../../models/estudiante.dart';
@@ -19,6 +26,7 @@ class _GroupStudentsScreenState extends State<GroupStudentsScreen> {
   @override
   void initState() { super.initState(); _cargar(); }
 
+  // Carga los estudiantes que pertenecen a este grupo.
   Future<void> _cargar() async {
     final id = widget.grupo.grupoId;
     if (id == null) return;
@@ -35,6 +43,7 @@ class _GroupStudentsScreenState extends State<GroupStudentsScreen> {
 
   void _mensaje(String texto) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
 
+  // Asigna (incorpora) un estudiante al grupo actual.
   Future<void> _asignar(Estudiante estudiante) async {
     final grupoId = widget.grupo.grupoId;
     final estudianteId = estudiante.estudianteId;
@@ -50,6 +59,7 @@ class _GroupStudentsScreenState extends State<GroupStudentsScreen> {
     } catch (e) { if (mounted) _mensaje('No se pudo asignar: $e'); }
   }
 
+  // Abre el panel inferior para elegir o registrar un estudiante.
   Future<void> _abrirGestion() async {
     final todos = await _repo.obtenerEstudiantes();
     final ids = _estudiantes.map((e) => e.estudianteId).toSet();
@@ -102,6 +112,7 @@ class _GroupStudentsScreenState extends State<GroupStudentsScreen> {
     );
   }
 
+  // Muestra el diálogo para registrar un estudiante nuevo.
   Future<Estudiante?> _formulario() async {
     final key = GlobalKey<FormState>();
     final codigo = TextEditingController();

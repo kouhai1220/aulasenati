@@ -1,3 +1,11 @@
+// ============================================================================
+// MODELO: ESTUDIANTE
+// ----------------------------------------------------------------------------
+// Representa a un estudiante, identificado por su código institucional.
+//   - fromMap(): fila de la BD -> objeto Estudiante.
+//   - toMap()  : objeto Estudiante -> mapa para guardar en la BD.
+// ============================================================================
+
 class Estudiante {
   final int? estudianteId;
   final String codigoInstitucional;
@@ -19,6 +27,7 @@ class Estudiante {
     this.updatedAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea un Estudiante desde una fila (mapa) de la base de datos.
   factory Estudiante.fromMap(Map<String, dynamic> map) {
     return Estudiante(
       estudianteId: map['estudiante_id'] as int?,
@@ -32,6 +41,7 @@ class Estudiante {
     );
   }
 
+  // Convierte el Estudiante en un mapa para insertarlo/actualizarlo en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (estudianteId != null) 'estudiante_id': estudianteId,

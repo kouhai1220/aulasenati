@@ -1,4 +1,11 @@
 
+// ============================================================================
+// PANTALLA: SESIONES ACADÉMICAS
+// ----------------------------------------------------------------------------
+// Lista las sesiones (clases) registradas de todos los grupos y permite crear
+// una nueva sesión con el botón "+".
+// ============================================================================
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -28,6 +35,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     _loadData();
   }
 
+  // Carga en paralelo las sesiones y los grupos (para mostrar sus nombres).
   Future<void> _loadData() async {
     try {
       final resultados = await Future.wait([
@@ -56,6 +64,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     }
   }
 
+  // Abre el formulario de nueva sesión y recarga si se guardó.
   Future<void> _openForm() async {
     final resultado = await Navigator.push<bool>(
       context,
@@ -69,6 +78,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     }
   }
 
+  // Convierte una fecha ISO (texto) al formato dd/mm/aaaa.
   String _formatDate(String value) {
     final date = DateTime.tryParse(value);
 
@@ -79,6 +89,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
         '${date.year}';
   }
 
+  // Devuelve "código - nombre" del grupo a partir de su id.
   String _groupName(int grupoId) {
     for (final grupo in _grupos) {
       if (grupo.grupoId == grupoId) {
@@ -105,6 +116,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     );
   }
 
+  // Construye el cuerpo según el estado: cargando, vacío o lista.
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(

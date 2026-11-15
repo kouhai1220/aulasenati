@@ -1,3 +1,11 @@
+// ============================================================================
+// MODELO: PARTICIPACION
+// ----------------------------------------------------------------------------
+// Representa los puntos otorgados a un estudiante en una sesión por una
+// actividad. El "operacionId" es un identificador único que evita registrar
+// dos veces la misma operación.
+// ============================================================================
+
 class Participacion {
   final int? participacionId;
   final int sesionId;
@@ -23,6 +31,7 @@ class Participacion {
     String? createdAt,
   }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
 
+  // Crea una Participacion desde una fila (mapa) de la base de datos.
   factory Participacion.fromMap(Map<String, dynamic> map) {
     return Participacion(
       participacionId: map['participacion_id'] as int?,
@@ -38,6 +47,7 @@ class Participacion {
     );
   }
 
+  // Convierte la Participacion en un mapa para insertarla en la BD.
   Map<String, dynamic> toMap() {
     return {
       if (participacionId != null) 'participacion_id': participacionId,
